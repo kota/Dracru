@@ -1,28 +1,26 @@
 require 'rubygems'
 require 'mechanize'
-require 'hpricot'
 require 'logger'
 require 'yaml'
+require 'sqlite3'
+require 'active_record'
+require 'game_map'
 require 'conf'
-#
-# Define your id and password in conf.rb as following
-# USERID = myuserid
-# PASSWD = mypassword
-#
-MYHEROS = ['24762','31744','27811']
-CATSLES = ['16018','21446']
+
+DOMAIN = "http://g03.dragon.vector.jp/"
+URL = { 
+  :login => "#{DOMAIN}login",
+  :index => "#{DOMAIN}mindex",
+  :hero => "#{DOMAIN}hero?oid=",
+  :raid  => "#{DOMAIN}a2t?vid=",
+  :map   => "#{DOMAIN}GameMap?"
+}
 
 class Dracru
   COOKIES = 'cookies'
-  DOMAIN = "http://g03.dragon.vector.jp/"
-  URL = { 
-    :login => "#{DOMAIN}login",
-    :index => "#{DOMAIN}mindex",
-    :hero => "#{DOMAIN}hero?oid=",
-    :raid  => "#{DOMAIN}a2t?vid=",
-  }
+  DB = 'dracru.db'
 
-  attr_accessor :agent
+  attr_accessor :agent,:map,:heroes
 
   def initialize
     @agent = Mechanize.new
@@ -31,6 +29,25 @@ class Dracru
     @agent.user_agent_alias = 'Windows IE 7'
     @agent.cookie_jar.load(COOKIES) if File.exists?(COOKIES)
     login
+    
+    if !File.exists?(DB)
+      SQLite3::Database.new(DB)
+    end
+    ActiveRecord::Base.establish_connection(
+      :adapter => 'sqlite3',
+      :username => 'dracru',
+      :database => 'dracru.db'
+    )
+    if !GameMap.table_exists?
+      ActiveRecord::Base.connection.create_table(:game_maps) do |t|
+        t.column :mapid, :string
+        t.column :x, :integer
+        t.column :y, :integer
+        t.column :url, :string
+        t.column :visited, :integer, :default => 0
+      end
+      GameMap.generate_maps(@agent)
+    end
   end
 
   def login
@@ -51,7 +68,33 @@ class Dracru
     @agent.cookie_jar.save_as(COOKIES)
     @agent
   end
-  
+
+  def hero_action
+    require 'pp'
+    MYHEROS.each do |hero|
+      doc = Nokogiri.HTML(@agent.get(URL[:hero] + hero).body)
+      if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
+        hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
+        hp,max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
+        catsle_id = nil
+        if (max_hp.to_f/hp.to_f < 3.0) #HPは３分の１以上?
+          catsle_link = doc.xpath("//div[@class='hero_a']/ul/li/a").each do |anchor|
+            if anchor['href'] =~ /\/mindex\?vid=([0-9]+)/
+              catsle_id = $1
+            end 
+          end
+          if catsle_id && map = GameMap.get_available_map
+            raid(catsle_id,hero,map.x,map.y)
+          else
+            @agent.log.info "No maps available"
+          end
+        end
+      else
+        @agent.log.info "Hero:#{hero} in raid"
+      end
+    end
+  end
+
   def raid(catsle_id,hero_id,x,y)
     select_hero = @agent.get(URL[:raid] + catsle_id)
     begin
@@ -73,8 +116,7 @@ class Dracru
       @agent.log.error e.message
     end
   end
-
 end
 
 dracru = Dracru.new
-#dracru.raid(CATSLES[1],MYHEROS[2],24,-44)
+dracru.hero_action

@@ -1,4 +1,5 @@
 conf.rb
 *.swp
 *.log
+*.db
 cookies
