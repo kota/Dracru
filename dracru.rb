@@ -29,7 +29,10 @@ class Dracru
     @agent.user_agent_alias = 'Windows IE 7'
     @agent.cookie_jar.load(COOKIES) if File.exists?(COOKIES)
     login
-    
+    prepare_map_db  
+  end
+
+  def prepare_map_db
     if !File.exists?(DB)
       SQLite3::Database.new(DB)
     end
@@ -69,8 +72,7 @@ class Dracru
     @agent
   end
 
-  def hero_action
-    require 'pp'
+  def raid_if_possible
     MYHEROS.each do |hero|
       doc = Nokogiri.HTML(@agent.get(URL[:hero] + hero).body)
       if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
@@ -119,4 +121,4 @@ class Dracru
 end
 
 dracru = Dracru.new
-dracru.hero_action
+dracru.raid_if_possible
