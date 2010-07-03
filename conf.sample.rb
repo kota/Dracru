@@ -1,2 +1,5 @@
 USERID = 'userId'
 PASSWD = 'password'
+MYHEROS = ['24762','26915','27811','31744']
+CATSLE_X = 43
+CATSLE_Y = -43

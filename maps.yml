@@ -1,9 +1,50 @@
 --- 
-- :x: 30
-  :y: -42
-  :id: "5310459"
+"5310452": &id001 
+  :x: "30"
+  :y: "-49"
+  :url: /GameMapInfo?mapId=5310452
   :visited: 1
-- :x: 41
-  :y: -47
-  :id: "5420454"
+  :id: "5310452"
+"5330452": 
+  :x: "32"
+  :y: "-49"
+  :url: /GameMapInfo?mapId=5330452
   :visited: 0
+  :id: "5330452"
+"5350448": 
+  :x: "34"
+  :y: "-53"
+  :url: /GameMapInfo?mapId=5350448
+  :visited: 0
+  :id: "5350448"
+"5380446": 
+  :x: "37"
+  :y: "-55"
+  :url: /GameMapInfo?mapId=5380446
+  :visited: 0
+  :id: "5380446"
+"5280449": 
+  :x: "27"
+  :y: "-52"
+  :url: /GameMapInfo?mapId=5280449
+  :visited: 0
+  :id: "5280449"
+2159682860: *id001
+"5300449": 
+  :x: "29"
+  :y: "-52"
+  :url: /GameMapInfo?mapId=5300449
+  :visited: 0
+  :id: "5300449"
+"5320447": 
+  :x: "31"
+  :y: "-54"
+  :url: /GameMapInfo?mapId=5320447
+  :visited: 0
+  :id: "5320447"
+"5310451": 
+  :x: "30"
+  :y: "-50"
+  :url: /GameMapInfo?mapId=5310451
+  :visited: 0
+  :id: "5310451"
