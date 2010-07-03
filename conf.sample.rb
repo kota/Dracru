@@ -1,0 +1,2 @@
+USERID = 'userId'
+PASSWD = 'password'
