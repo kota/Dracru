@@ -3,3 +3,5 @@ conf.rb
 *.log
 *.db
 cookies
+the-target/log/*.log
+the-target/tmp/**/*
