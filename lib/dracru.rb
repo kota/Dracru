@@ -4,7 +4,7 @@ require 'logger'
 require 'yaml'
 require 'sqlite3'
 require 'active_record'
-require 'game_map'
+require 'lib/game_map'
 require 'conf'
 
 DOMAIN = "http://g03.dragon.vector.jp/"
@@ -33,21 +33,19 @@ class Dracru
   end
 
   def prepare_map_db
-    if !File.exists?(DB)
+    unless File.exists?(DB)
       SQLite3::Database.new(DB)
     end
     ActiveRecord::Base.establish_connection(
       :adapter => 'sqlite3',
-      :username => 'dracru',
-      :database => 'dracru.db'
+      :database => DB
     )
-    if !GameMap.table_exists?
+    unless GameMap.table_exists?
       ActiveRecord::Base.connection.create_table(:game_maps) do |t|
         t.column :mapid, :string
         t.column :x, :integer
         t.column :y, :integer
-        t.column :url, :string
-        t.column :visited, :integer, :default => 0
+        t.column :visited_at, :timestamp
       end
       GameMap.generate_maps(@agent)
     end
@@ -79,7 +77,7 @@ class Dracru
         hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
         hp,max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
         catsle_id = nil
-        if (max_hp.to_f/hp.to_f < 3.0) #HPは３分の１以上?
+        if (hp.to_f / max_hp.to_f > 1.0/3.0) #HPは３分の１以上?
           catsle_link = doc.xpath("//div[@class='hero_a']/ul/li/a").each do |anchor|
             if anchor['href'] =~ /\/mindex\?vid=([0-9]+)/
               catsle_id = $1
@@ -106,19 +104,16 @@ class Dracru
         else
           raise "Hero:#{hero_id} not available."
         end
-        f.radiobuttons_with(:name => type).each{|radio| radio.check if radio.value == 2 }
+        f.radiobuttons_with(:name => 'type').each{|radio| radio.check if radio.value == 2 }
         f.x = x
         f.y = y
       end.submit
       result = confirm.form_with(:name => 'form1') do |f|
         f.action = '/s2t'
       end.click_button
-      @agent.log.info "SUCCESS: Raid #{x},#{y} witch hero:#{hero_id}"
+      @agent.log.info "SUCCESS: Raid #{x},#{y} with hero:#{hero_id}"
     rescue => e
       @agent.log.error e.message
     end
   end
 end
-
-dracru = Dracru.new
-dracru.raid_if_possible
