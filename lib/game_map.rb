@@ -1,9 +1,22 @@
 class GameMap < ActiveRecord::Base
 
   def self.generate_maps(agent)
-    vectors = [[-11,-9],[-11,0],[11,9],
-               [0,-9],[0,0],[0,9],
-               [11,-9],[11,0],[11,9]]
+    vectors = [[-22, -18],
+               [-22,  18],
+               [22,  -18],
+               [22,   18],
+               [-33,  9],
+               [-33,  0],
+               [-33, -9],
+               [33,   9],
+               [33,   0],
+               [33,  -9],
+               [-11, 27],
+               [0,   27],
+               [11,  27],
+               [-11,-27],
+               [0,  -27],
+               [11, -27]]
     vectors.each do |xy|
       xp = (CATSLE_X.to_i + xy[0]).to_s
       yp = (CATSLE_Y.to_i + xy[1]).to_s
@@ -13,15 +26,15 @@ class GameMap < ActiveRecord::Base
           map_type = $1
           x,y = anchor['onmouseover'].match(/showCityInfo\('([0-9-]+)\|([0-9-]+)/)[1..2]
           map_id = anchor['href'].match(/GameMapInfo\?mapId=([0-9]+)/)[1]
-          GameMap.create({:x => x,:y => y,:url => anchor['href'], :mapid => map_id})
+          GameMap.create({:x => x,:y => y,:mapid => map_id})
         end
       end
     end
   end
 
   def self.get_available_map
-    if map = GameMap.find(:first,:conditions => 'visited = 0')
-      map.visited = 1
+    if map = GameMap.find(:first,:conditions => ['visited_at is null or visited_at != ?',Time.now.beginning_of_day],:order => 'random()')
+      map.visited_at = Time.now.beginning_of_day
       map.save!
       return map
     else 
