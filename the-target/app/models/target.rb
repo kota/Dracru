@@ -30,8 +30,11 @@ class Target < ActiveRecord::Base
       account = Account.find :first
       agent = login(agent,  account.userid, account.password)
       
-      Target.find(:all).each do |target|
+      Target.find(:all, :order => 'rand()').each do |target|
         html = agent.get(URL[:user] + target.userid.to_s).body
+        
+        sleep 0.5
+        
         doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
         tds = (doc/'div.u_info'/'table.t2').xpath('//td')
         strs = []
