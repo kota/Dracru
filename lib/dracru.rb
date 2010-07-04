@@ -73,6 +73,7 @@ class Dracru
   def raid_if_possible
     MYHEROS.each do |hero|
       doc = Nokogiri.HTML(@agent.get(URL[:hero] + hero).body)
+      sleep 0.5
       if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
         hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
         hp,max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
@@ -97,6 +98,7 @@ class Dracru
 
   def raid(catsle_id,hero_id,x,y)
     select_hero = @agent.get(URL[:raid] + catsle_id)
+    sleep 0.5
     begin
       confirm = select_hero.form_with(:action => '/a2t') do |f|
         if hero_checkbutton = f.checkbox_with(:value => hero_id)
