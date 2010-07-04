@@ -1,0 +1,27 @@
+<h2><%=h @target.name %></h2>
+<%= link_to '戻る', :action => 'index' %>
+
+<table border='1'>
+  <tr>
+    <th>時刻</th>
+    <th>ランキング</th>
+    <th>名声値</th>
+    <th>人口</th>
+    <th>城の数</th>
+    <th>種族</th>
+    <th>ギルド</th>
+  </tr>
+  <% @details.each do |detail| %>
+  <tr>
+    <td><%=h detail.get_at.strftime("%m/%d %H時") %></td>
+    <td><%=h detail.ranking %></td>
+    <td><%=h detail.fame %></td>
+    <td><%=h detail.population %></td>
+    <td><%=h detail.castle %></td>
+    <td><%=h detail.race %></td>
+    <td><%=h detail.guild %></td>
+  </tr>
+  <% end %>
+</table>
+
+<%= link_to '戻る', :action => 'index' %>

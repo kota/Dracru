@@ -1,0 +1,20 @@
+development:
+  adapter: mysql
+  encoding: utf8
+  database: target_d
+  username: root
+  password:
+
+test:
+  adapter: mysql
+  encoding: utf8
+  database: target_t
+  username: root
+  password:
+
+production:
+  adapter: mysql
+  encoding: utf8
+  database: target_p
+  username: root
+  password:
