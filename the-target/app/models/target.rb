@@ -2,7 +2,7 @@
 require 'mechanize'
 
 class Target < ActiveRecord::Base
-  has_many :details
+  has_many :details, :dependent => :destroy
   
   validates_uniqueness_of   :userid
   validates_numericality_of :userid
@@ -42,7 +42,12 @@ class Target < ActiveRecord::Base
           strs_n = []
           ths.each { |e| strs_n << e.text }
           target.name = get_name(strs_n)
-          target.save
+          if target.name.blank?
+            target.destroy
+            next
+          else
+            target.save
+          end
         end
         target.details.create(
                               :get_at     => get_at,
