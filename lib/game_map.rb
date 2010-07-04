@@ -21,6 +21,7 @@ class GameMap < ActiveRecord::Base
       xp = (CATSLE_X.to_i + xy[0]).to_s
       yp = (CATSLE_Y.to_i + xy[1]).to_s
       doc = Nokogiri.HTML(agent.get(URL[:map] + "xp=#{xp}&yp=#{yp}").body)
+      sleep 0.5
       doc.xpath("//div[@class='cells']/ul/li/a").each do |anchor|
         if(anchor['onmouseover'].split(',')[1] =~ /'(山地|丘陵|湿地|森林)'/)
           map_type = $1
