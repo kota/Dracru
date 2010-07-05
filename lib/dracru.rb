@@ -24,6 +24,7 @@ class Dracru
   attr_accessor :agent,:map,:heroes
 
   def initialize
+    @logger = Logger.new(STDOUT)
     @agent = Mechanize.new
     @agent.log = Logger.new("mech.log")
     @agent.log.level = Logger::INFO
@@ -64,8 +65,10 @@ class Dracru
       unless URL[:index] == @agent.page.uri.to_s
         raise "Logged In Fail"
       else
-        @agent.log.info 'Logged In'
+        @logger.info 'Logged In new session'
       end
+    else
+      @logger.info 'Logge In using cookies'
     end
     @agent.cookie_jar.save_as(COOKIES)
     @agent
@@ -88,11 +91,11 @@ class Dracru
           if catsle_id && map = GameMap.get_available_map
             raid(catsle_id,hero,map.x,map.y)
           else
-            @agent.log.info "No maps available"
+            @logger.info "No maps available"
           end
         end
       else
-        @agent.log.info "Hero:#{hero} in raid"
+        @logger.info "Hero:#{hero} in raid"
       end
     end
   end
@@ -114,8 +117,9 @@ class Dracru
       result = confirm.form_with(:name => 'form1') do |f|
         f.action = '/s2t'
       end.click_button
-      @agent.log.info "SUCCESS: Raid #{x},#{y} with hero:#{hero_id}"
+      @logger.info "SUCCESS: Raid #{x},#{y} with hero:#{hero_id}"
     rescue => e
+      @logger.error e.message
       @agent.log.error e.message
     end
   end
