@@ -25,8 +25,8 @@ class Dracru
   attr_accessor :agent,:map,:heroes
 
   def initialize
-    #@logger = Logger.new(FILE_PATH + "/dracru.log")
-    @logger = Logger.new(STDOUT)
+    @logger = Logger.new(FILE_PATH + "/dracru.log")
+    # @logger = Logger.new(STDOUT)
     @agent = Mechanize.new
     @agent.log = Logger.new(FILE_PATH + "/mech.log")
     @agent.log.level = Logger::INFO
