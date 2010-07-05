@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 class GameMap < ActiveRecord::Base
 
   def self.generate_maps(agent)
