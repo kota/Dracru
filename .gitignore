@@ -2,6 +2,9 @@ conf.rb
 *.swp
 *.log
 *.db
-cookies
+lib/cookies
+lib/*.swp
+lib/*.log
+lib/*.db
 the-target/log/*.log
 the-target/tmp/**/*

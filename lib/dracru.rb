@@ -18,15 +18,16 @@ URL = {
 }
 
 class Dracru
-  COOKIES = 'cookies'
-  DB = 'dracru.db'
+  FILE_PATH = File.expand_path(File.dirname(__FILE__)) 
+  COOKIES = FILE_PATH + '/cookies'
+  DB = FILE_PATH + '/dracru.db'
 
   attr_accessor :agent,:map,:heroes
 
   def initialize
-    @logger = Logger.new(STDOUT)
+    @logger = Logger.new(FILE_PATH + "/dracru.log")
     @agent = Mechanize.new
-    @agent.log = Logger.new("mech.log")
+    @agent.log = Logger.new(FILE_PATH + "/mech.log")
     @agent.log.level = Logger::INFO
     @agent.user_agent_alias = 'Windows IE 7'
     @agent.cookie_jar.load(COOKIES) if File.exists?(COOKIES)
