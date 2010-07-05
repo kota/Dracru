@@ -27,6 +27,8 @@ class Dracru
 
   def initialize
     @logger = Logger.new(FILE_PATH + "/dracru.log")
+    @logger.info "---" + Time.now.strftime("%m/%d %H:%M")
+
     # @logger = Logger.new(STDOUT)
     @agent = Mechanize.new
     @agent.log = Logger.new(FILE_PATH + "/mech.log")
@@ -71,7 +73,7 @@ class Dracru
         @logger.info 'Logged In new session'
       end
     else
-      @logger.info 'Logge In using cookies'
+      @logger.info 'Logged In using cookies'
     end
     @agent.cookie_jar.save_as(COOKIES)
     @agent
