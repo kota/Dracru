@@ -25,7 +25,8 @@ class Dracru
   attr_accessor :agent,:map,:heroes
 
   def initialize
-    @logger = Logger.new(FILE_PATH + "/dracru.log")
+    #@logger = Logger.new(FILE_PATH + "/dracru.log")
+    @logger = Logger.new(STDOUT)
     @agent = Mechanize.new
     @agent.log = Logger.new(FILE_PATH + "/mech.log")
     @agent.log.level = Logger::INFO
@@ -77,11 +78,13 @@ class Dracru
 
   def raid_if_possible
     MYHEROS.each do |hero|
-      doc = Nokogiri.HTML(@agent.get(URL[:hero] + hero).body)
+      html = @agent.get(URL[:hero] + hero).body
+      #doc = Nokogiri.HTML(@agent.get(URL[:hero] + hero).body)
+      doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
+      hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
+      hp, max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
       sleep 0.5
       if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
-        hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
-        hp,max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
         catsle_id = nil
         if (hp.to_f / max_hp.to_f > 1.0 / STOP_HUNT_HP_BORDER) #HPは x 分の１以上?
           catsle_link = doc.xpath("//div[@class='hero_a']/ul/li/a").each do |anchor|
@@ -90,18 +93,18 @@ class Dracru
             end 
           end
           if catsle_id && map = GameMap.get_available_map
-            raid(catsle_id,hero,map.x,map.y)
+            raid(catsle_id, hero, map.x, map.y, hp_text)
           else
             @logger.info "No maps available"
           end
         end
       else
-        @logger.info "Hero:#{hero} in raid"
+        @logger.info "Hero:#{hero} in raid. HP #{hp_text}"
       end
     end
   end
 
-  def raid(catsle_id,hero_id,x,y)
+  def raid(catsle_id, hero_id, x, y, hp_text)
     select_hero = @agent.get(URL[:raid] + catsle_id)
     sleep 0.5
     begin
@@ -118,7 +121,7 @@ class Dracru
       result = confirm.form_with(:name => 'form1') do |f|
         f.action = '/s2t'
       end.click_button
-      @logger.info "SUCCESS: Raid #{x},#{y} with hero:#{hero_id}"
+      @logger.info "SUCCESS: Raid #{x},#{y} with hero : #{hero_id}. HP #{hp_text}"
     rescue => e
       @logger.error e.message
       @agent.log.error e.message
