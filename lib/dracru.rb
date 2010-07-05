@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 require 'rubygems'
 require 'mechanize'
 require 'logger'
@@ -78,7 +79,7 @@ class Dracru
         hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
         hp,max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
         catsle_id = nil
-        if (hp.to_f / max_hp.to_f > 1.0/3.0) #HPは３分の１以上?
+        if (hp.to_f / max_hp.to_f > 1.0 / STOP_HUNT_HP_BORDER) #HPは x 分の１以上?
           catsle_link = doc.xpath("//div[@class='hero_a']/ul/li/a").each do |anchor|
             if anchor['href'] =~ /\/mindex\?vid=([0-9]+)/
               catsle_id = $1
