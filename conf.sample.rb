@@ -5,6 +5,7 @@ MYHEROS = ['24762','26915','27811','31744']
 STOP_HUNT_HP_BORDER = 3.0
 CATSLE_X = 43
 CATSLE_Y = -43
+AKUMA = true
 VECTORS = [
            [0,   0], # 中心
            [11, -9], # １マップ上

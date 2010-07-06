@@ -15,18 +15,11 @@ URL = {
   :hero => "#{DOMAIN}hero?oid=",
   :raid  => "#{DOMAIN}a2t?vid=",
   :map   => "#{DOMAIN}GameMap?",
-<<<<<<< HEAD
-  :soldier => "#{DOMAIN}s2h?vid=",
-  :catsle => "#{DOMAIN}mindex?vid=",
-}
-
-=======
   :mapinfo => "#{DOMAIN}GameMapInfo?mapId=",
   :soldier => "#{DOMAIN}s2h",
   :castle => "#{DOMAIN}mindex?vid=",
 }
 SLEEP = [4.0, 4.5, 5.0, 5.5, 6.0]
->>>>>>> 477a1ffd8f847b224bc42f7b128aea9fd1bc23c9
 class Dracru
   FILE_PATH = File.expand_path(File.dirname(__FILE__)) 
   COOKIES = FILE_PATH + '/cookies'
@@ -58,18 +51,12 @@ class Dracru
     unless GameMap.table_exists?
       ActiveRecord::Base.connection.create_table(:game_maps) do |t|
         t.column :mapid, :string
-<<<<<<< HEAD
-        t.column :x, :integer
-        t.column :y, :integer
-        t.column :visited_at, :timestamp
-=======
         t.column :map_type, :string
         t.column :akuma, :bool, :default => false
         t.column :x, :integer
         t.column :y, :integer
         t.column :visited_at, :timestamp, :default => '1980-1-1'
         t.column :akuma_checked_at, :timestamp, :default => '1980-1-1'
->>>>>>> 477a1ffd8f847b224bc42f7b128aea9fd1bc23c9
       end
       GameMap.generate_maps(@agent)
     end
@@ -100,10 +87,6 @@ class Dracru
     each_hero_id do |hero|
       doc = nokogiri_parse(URL[:hero] + hero)
       hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
-<<<<<<< HEAD
-      puts hp_text
-=======
->>>>>>> 477a1ffd8f847b224bc42f7b128aea9fd1bc23c9
       hp, max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
       sleep 0.5
       if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
