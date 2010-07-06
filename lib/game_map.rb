@@ -9,24 +9,47 @@ class GameMap < ActiveRecord::Base
       html = agent.get(URL[:map] + "xp=#{xp}&yp=#{yp}").body
       doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
       doc.xpath("//div[@class='cells']/ul/li/a").each do |anchor|
-        if(anchor['onmouseover'].split(',')[1] =~ /'(山地|丘陵|湿地|森林)'/)
+        if(anchor['onmouseover'].split(',')[1] =~ /'(山地|丘陵|湿地|森林|悪魔城)'/)
           map_type = $1
-          x,y = anchor['onmouseover'].match(/showCityInfo\('([0-9-]+)\|([0-9-]+)/)[1..2]
+          akuma = false
+          akuma = true if map_type == "悪魔城"
+          x, y = anchor['onmouseover'].match(/showCityInfo\('([0-9-]+)\|([0-9-]+)/)[1..2]
           map_id = anchor['href'].match(/GameMapInfo\?mapId=([0-9]+)/)[1]
-          GameMap.create({:x => x,:y => y,:mapid => map_id})
+          GameMap.create({:x => x, :y => y, :mapid => map_id, :map_type => map_type, :akuma => akuma})
         end
       end
     end
   end
 
-  def self.get_available_map
-    if map = GameMap.find(:first,:conditions => ['visited_at is null or visited_at != ?',Time.now.beginning_of_day],:order => 'random()')
-      map.visited_at = Time.now.beginning_of_day
-      map.save!
-      return map
+  def self.get_available_map(agent)
+    now = Time.now
+    if AKUMA
+      # 60分以内にチェックした悪魔城は対象外
+      conditions = ['akuma_checked_at < ? and visited_at != ?', 60.minutes.ago, now.beginning_of_day]
+      order = "akuma desc, random()" 
     else 
-      return nil
+      conditions = ['visited_at != ?', now.beginning_of_day]
+      order = "random()"
     end
+    # 30回マップ探索してダメならあきらめる
+    for i in 1..30
+      map = GameMap.find(:first, :conditions => conditions,:order => order)
+      if map
+        html = agent.get(URL[:mapinfo] + map.mapid).body
+        sleep SLEEP[rand(SLEEP.length)]
+        doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
+        text = doc.xpath("//div[@class='container']/div[@class='col1']/div[@class='cz_info']/h1").text
+        if text.split('(')[0] == '悪魔城廃墟'
+          map.akuma_checked_at = Time.now
+          map.save
+        else
+          map.visited_at = now.beginning_of_day
+          map.save!
+          break
+        end
+      end
+    end
+    return map
   end
 
 end

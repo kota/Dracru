@@ -15,10 +15,11 @@ URL = {
   :hero => "#{DOMAIN}hero?oid=",
   :raid  => "#{DOMAIN}a2t?vid=",
   :map   => "#{DOMAIN}GameMap?",
+  :mapinfo => "#{DOMAIN}GameMapInfo?mapId=",
   :soldier => "#{DOMAIN}s2h",
   :castle => "#{DOMAIN}mindex?vid=",
 }
-
+SLEEP = [4.0, 4.5, 5.0, 5.5, 6.0]
 class Dracru
   FILE_PATH = File.expand_path(File.dirname(__FILE__)) 
   COOKIES = FILE_PATH + '/cookies'
@@ -50,9 +51,12 @@ class Dracru
     unless GameMap.table_exists?
       ActiveRecord::Base.connection.create_table(:game_maps) do |t|
         t.column :mapid, :string
+        t.column :map_type, :string
+        t.column :akuma, :bool, :default => false
         t.column :x, :integer
         t.column :y, :integer
-        t.column :visited_at, :timestamp
+        t.column :visited_at, :timestamp, :default => '1980-1-1'
+        t.column :akuma_checked_at, :timestamp, :default => '1980-1-1'
       end
       GameMap.generate_maps(@agent)
     end
@@ -102,8 +106,8 @@ class Dracru
             catsle_id = $1
           end 
         end
-        if catsle_id && map = GameMap.get_available_map
-          raid(catsle_id, hero, map.x, map.y, hp_text)
+        if catsle_id && map = GameMap.get_available_map(agent)
+          raid(catsle_id, hero, map, hp_text)
         else
           @logger.info "No maps available"
         end
@@ -113,7 +117,7 @@ class Dracru
     end
   end
 
-  def raid(catsle_id, hero_id, x, y, hp_text)
+  def raid(catsle_id, hero_id, map, hp_text)
     select_hero = @agent.get(URL[:raid] + catsle_id)
     sleep 0.5
     begin
@@ -124,13 +128,13 @@ class Dracru
           raise "Hero:#{hero_id} not available."
         end
         f.radiobuttons_with(:name => 'type').each{|radio| radio.check if radio.value == 2 }
-        f.x = x
-        f.y = y
+        f.x = map.x
+        f.y = map.y
       end.submit
       result = confirm.form_with(:name => 'form1') do |f|
         f.action = '/s2t'
       end.click_button
-      @logger.info "SUCCESS: Raid #{x},#{y} with hero : #{hero_id}. HP #{hp_text}"
+      @logger.info "SUCCESS: Raid #{map.x},#{map.y} (#{map.map_type}) with hero : #{hero_id}. HP #{hp_text}"
     rescue => e
       @logger.error e.message
       @agent.log.error e.message
