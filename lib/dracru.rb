@@ -16,6 +16,7 @@ URL = {
   :raid  => "#{DOMAIN}a2t?vid=",
   :map   => "#{DOMAIN}GameMap?",
   :soldier => "#{DOMAIN}s2h",
+  :castle => "#{DOMAIN}mindex?vid=",
 }
 
 class Dracru
@@ -28,8 +29,7 @@ class Dracru
   def initialize
     @logger = Logger.new(FILE_PATH + "/dracru.log")
     @logger.info "---" + Time.now.strftime("%m/%d %H:%M")
-
-    # @logger = Logger.new(STDOUT)
+    
     @agent = Mechanize.new
     @agent.log = Logger.new(FILE_PATH + "/mech.log")
     @agent.log.level = Logger::INFO
@@ -81,10 +81,9 @@ class Dracru
 
   def raid_if_possible
     MYHEROS.each do |hero|
-      html = @agent.get(URL[:hero] + hero).body
-      #doc = Nokogiri.HTML(@agent.get(URL[:hero] + hero).body)
-      doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
+      doc = nokogiri_parse(URL[:hero] + hero)
       hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
+      puts hp_text
       hp, max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
       sleep 0.5
       if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
@@ -174,5 +173,45 @@ class Dracru
   # 兵士配備画面のキャッシュ
   def soldier_page
     @soldier_page ||= @agent.get(URL[:soldier])
+  end
+  
+  # 所有する英雄のIDを返す
+  def get_hero_ids
+    ids = []
+    doc = nokogiri_parse(URL[:hero])
+    
+    #something
+    
+    ids
+  end
+  
+  # 所有する城のIDを返す
+  def get_castle_ids
+    ids = []
+    doc = nokogiri_parse(URL[:index])
+    
+    #something
+    
+    ids
+  end
+  
+  # 対象の城の座標を返す
+  def get_xy(castle_id)
+    xy = {}
+    doc = nokogiri_parse(URL[:castle])
+    
+    #something
+    
+    xy[:x] = x
+    xy[:y] = y
+    xy
+  end
+  
+  
+  private
+  
+  def nokogiri_parse(url)
+    html = @agent.get(url).body
+    Nokogiri::HTML.parse(html, nil, 'UTF-8')
   end
 end
