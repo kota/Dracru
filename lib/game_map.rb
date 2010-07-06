@@ -1,28 +1,13 @@
 # -*- coding: utf-8 -*-
 class GameMap < ActiveRecord::Base
-
+  
+  
   def self.generate_maps(agent)
-    vectors = [[-22, -18],
-               [-22,  18],
-               [22,  -18],
-               [22,   18],
-               [-33,  9],
-               [-33,  0],
-               [-33, -9],
-               [33,   9],
-               [33,   0],
-               [33,  -9],
-               [-11, 27],
-               [0,   27],
-               [11,  27],
-               [-11,-27],
-               [0,  -27],
-               [11, -27]]
-    vectors.each do |xy|
+    VECTORS.each do |xy|
       xp = (CATSLE_X.to_i + xy[0]).to_s
       yp = (CATSLE_Y.to_i + xy[1]).to_s
-      doc = Nokogiri.HTML(agent.get(URL[:map] + "xp=#{xp}&yp=#{yp}").body)
-      sleep 0.5
+      html = agent.get(URL[:map] + "xp=#{xp}&yp=#{yp}").body
+      doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
       doc.xpath("//div[@class='cells']/ul/li/a").each do |anchor|
         if(anchor['onmouseover'].split(',')[1] =~ /'(山地|丘陵|湿地|森林)'/)
           map_type = $1
