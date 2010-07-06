@@ -84,27 +84,28 @@ class Dracru
   end
 
   def raid_if_possible
-    MYHEROS.each do |hero|
+    each_hero_id do |hero|
       doc = nokogiri_parse(URL[:hero] + hero)
       hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
       hp, max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
       sleep 0.5
       if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
         catsle_id = nil
-        # HPが満タンでユニットが0なら出撃しない(復活直後)
-        # TODO ユニットを配置して出撃できるようにすること
-        if hp >= max_hp && !has_soldier?(hero)
-          @logger.info("Hero:#{hero} has max hp and no soldier.")
-          next
-        end
-        #HPは x 分の１以下の場合はユニットを0にして出撃
-        if (hp.to_f / max_hp.to_f <= 1.0 / STOP_HUNT_HP_BORDER)
-          reset_soldier(hero)
-        end
         catsle_link = doc.xpath("//div[@class='hero_a']/ul/li/a").each do |anchor|
           if anchor['href'] =~ /\/mindex\?vid=([0-9]+)/
             catsle_id = $1
           end 
+        end
+        # HPが満タンでユニットが0なら出撃しない(復活直後)
+        # TODO ユニットを配置して出撃できるようにすること
+        if hp >= max_hp && !has_soldier?(hero, catsle_id)
+          @logger.info("Hero:#{hero} has max hp and no soldier.")
+          next
+          # reset_soldier(hero, catsle_id)
+        end
+        #HPは x 分の１以下の場合はユニットを0にして出撃
+        if (hp.to_f / max_hp.to_f <= 1.0 / STOP_HUNT_HP_BORDER)
+          unset_soldier(hero, catsle_id)
         end
         if catsle_id && map = GameMap.get_available_map(agent)
           raid(catsle_id, hero, map, hp_text)
@@ -142,26 +143,85 @@ class Dracru
   end
   
   # ユニットを0にする
-  def reset_soldier(hero_id)
+  def unset_soldier(hero_id, catsle_id)
+    @logger.info "Unset soldier: #{hero_id}"
+    set_soldier(hero_id, catsle_id, 's_none.gif', 0)
+  end
+
+  # ユニットを再びセットする
+  def reset_soldier(hero_id, catsle_id)
     @logger.info "Reset soldier: #{hero_id}"
-    set_soldier(hero_id, 's_none.gif', 0)
+    # TODO implement me
   end
 
   # ユニットが0かどうかを返す
-  def has_soldier?(hero_id)
-    soldier_page.form_with(:action => '/SoldierDistributeForm') do |form|
+  def has_soldier?(hero_id, catsle_id)
+    soldier_page(catsle_id).form_with(:action => '/SoldierDistributeForm') do |form|
       return form.fields_with(:name => "heroamount#{hero_id}").any? do |f|
         f.value.to_i != 0
       end
     end
   end
   
-  def set_soldier(hero_id, type, quantity)
+  # 所有する英雄のIDを返す
+  def hero_ids
+    return MYHEROS # TODO remove
+    ids = []
+    doc = nokogiri_parse(URL[:hero])
+    
+    #something
+    
+    ids
+  end
+  
+  # 所有する城のIDを返す
+  def catsle_ids
+    ids = []
+    doc = nokogiri_parse(URL[:index])
+    
+    #something
+    
+    ids
+  end
+  
+  # 対象の城の座標を返す
+  def get_xy(catsle_id)
+    xy = {}
+    doc = nokogiri_parse(URL[:catsle])
+    
+    #something
+    
+    xy[:x] = x
+    xy[:y] = y
+    xy
+  end
+  
+  def each_hero_id
+    hero_ids.each do |hero_id|
+      # ほんとはこうしたい
+      # yield hero_id, catsle_id
+      yield hero_id
+    end
+  end
+
+  private
+  
+  def nokogiri_parse(url)
+    html = @agent.get(url).body
+    doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
+    if block_given?
+      yield doc
+    else
+      doc
+    end
+  end
+
+  def set_soldier(hero_id, catsle_id, unit_type, quantity)
     i = quantity / 7
     j = quantity % 7
-    soldier_page.form_with(:action => '/SoldierDistributeForm') do |form|
+    soldier_page(catsle_id).form_with(:action => '/SoldierDistributeForm') do |form|
       form.fields_with(:name => "herosoldier#{hero_id}").each do |f|
-        f.value = type
+        f.value = unit_type
       end
       form.fields_with(:name => "heroamount#{hero_id}").each do |f|
         f.value = i
@@ -174,47 +234,8 @@ class Dracru
   end
 
   # 兵士配備画面のキャッシュ
-  def soldier_page
-    @soldier_page ||= @agent.get(URL[:soldier])
-  end
-  
-  # 所有する英雄のIDを返す
-  def get_hero_ids
-    ids = []
-    doc = nokogiri_parse(URL[:hero])
-    
-    #something
-    
-    ids
-  end
-  
-  # 所有する城のIDを返す
-  def get_castle_ids
-    ids = []
-    doc = nokogiri_parse(URL[:index])
-    
-    #something
-    
-    ids
-  end
-  
-  # 対象の城の座標を返す
-  def get_xy(castle_id)
-    xy = {}
-    doc = nokogiri_parse(URL[:castle])
-    
-    #something
-    
-    xy[:x] = x
-    xy[:y] = y
-    xy
-  end
-  
-  
-  private
-  
-  def nokogiri_parse(url)
-    html = @agent.get(url).body
-    Nokogiri::HTML.parse(html, nil, 'UTF-8')
+  # nokogiri_parseで吸収する？
+  def soldier_page(catsle_id)
+    (@soldier_pages ||= {})[catsle_id] ||= @agent.get(URL[:soldier] + catsle_id)
   end
 end
