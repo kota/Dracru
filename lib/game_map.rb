@@ -34,7 +34,7 @@ class GameMap < ActiveRecord::Base
       map = GameMap.find(:first, :conditions => conditions,:order => order)
       if map
         html = agent.get(URL[:mapinfo] + map.mapid).body
-        sleep SLEEP[rand(SLEEP.length)]
+        sleep rand(SLEEP.length)
         doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
         text = doc.xpath("//div[@class='container']/div[@class='col1']/div[@class='cz_info']/h1").text
         if text.split('(')[0] == '悪魔城廃墟'
