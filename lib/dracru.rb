@@ -16,7 +16,7 @@ URL = {
   :raid  => "#{DOMAIN}a2t?vid=",
   :map   => "#{DOMAIN}GameMap?",
   :mapinfo => "#{DOMAIN}GameMapInfo?mapId=",
-  :soldier => "#{DOMAIN}s2h",
+  :soldier => "#{DOMAIN}s2h?vid=",
   :castle => "#{DOMAIN}mindex?vid=",
 }
 SLEEP = [4.0, 4.5, 5.0, 5.5, 6.0]
