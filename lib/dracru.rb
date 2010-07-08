@@ -87,6 +87,10 @@ class Dracru
     each_hero_id do |hero|
       doc = nokogiri_parse(URL[:hero] + hero)
       hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
+      unless hp_text =~ /^\d+\/\d+ $/
+        @logger.info("Hero:#{hero} is dead.")
+        next
+      end
       hp, max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
       sleep 0.5
       if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
