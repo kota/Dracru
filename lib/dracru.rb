@@ -1,43 +1,18 @@
 # -*- coding: utf-8 -*-
-require 'rubygems'
-require 'mechanize'
-require 'logger'
-require 'yaml'
-require 'sqlite3'
-require 'active_record'
-require 'lib/game_map'
-require 'conf'
-
-DOMAIN = "http://g03.dragon.vector.jp/"
-URL = { 
-  :login => "#{DOMAIN}login",
-  :index => "#{DOMAIN}mindex",
-  :hero => "#{DOMAIN}hero?oid=",
-  :raid  => "#{DOMAIN}a2t?vid=",
-  :map   => "#{DOMAIN}GameMap?",
-  :mapinfo => "#{DOMAIN}GameMapInfo?mapId=",
-  :soldier => "#{DOMAIN}s2h?vid=",
-  :castle => "#{DOMAIN}mindex?vid=",
-}
-SLEEP = [4.0, 4.5, 5.0, 5.5, 6.0]
 class Dracru
-  FILE_PATH = File.expand_path(File.dirname(__FILE__)) 
-  COOKIES = FILE_PATH + '/cookies'
-  DB = FILE_PATH + '/dracru.db'
-
+  include Core
+  
   attr_accessor :agent,:map,:heroes
 
   def initialize
-    @logger = Logger.new(FILE_PATH + "/dracru.log")
-    @logger.info "---" + Time.now.strftime("%m/%d %H:%M")
-    
     @agent = Mechanize.new
-    @agent.log = Logger.new(FILE_PATH + "/mech.log")
+    @agent.log = Logger.new(ROOT_PATH + "/tmp/mech.log")
     @agent.log.level = Logger::INFO
     @agent.user_agent_alias = 'Windows IE 7'
     @agent.cookie_jar.load(COOKIES) if File.exists?(COOKIES)
     login
-    prepare_map_db  
+    delay
+    prepare_map_db
   end
 
   def prepare_map_db
@@ -64,20 +39,22 @@ class Dracru
 
   def login
     unless URL[:index] == @agent.get(URL[:index]).uri.to_s
-      @agent.log.info 'Logging'
+      @agent.log.info 'Logging...'
       login_page = @agent.get "http://dragon.vector.jp/member/gamestart.php?s=g03"
+      delay
       server_login = login_page.form_with(:action => '/dragon/login/') do |f|
         f.loginid  = USERID
         f.password = PASSWD
       end.click_button
+      delay
       server_login.form_with(:action => URL[:login]).submit
       unless URL[:index] == @agent.page.uri.to_s
         raise "Logged In Fail"
       else
-        @logger.info 'Logged In new session'
+        $logger.info 'Logged In new session'
       end
     else
-      @logger.info 'Logged In using cookies'
+      $logger.info 'Logged In using cookies'
     end
     @agent.cookie_jar.save_as(COOKIES)
     @agent
@@ -88,11 +65,10 @@ class Dracru
       doc = nokogiri_parse(URL[:hero] + hero)
       hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
       unless hp_text =~ /^\d+\/\d+ $/
-        @logger.info("Hero:#{hero} is dead.")
+        $logger.info("Hero:#{hero} is dead.")
         next
       end
       hp, max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
-      sleep 0.5
       if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
         catsle_id = nil
         catsle_link = doc.xpath("//div[@class='hero_a']/ul/li/a").each do |anchor|
@@ -103,7 +79,7 @@ class Dracru
         # HPが満タンでユニットが0なら出撃しない(復活直後)
         # TODO ユニットを配置して出撃できるようにすること
         if hp >= max_hp && !has_soldier?(hero, catsle_id)
-          @logger.info("Hero:#{hero} has max hp and no soldier.")
+          $logger.info("Hero:#{hero} has max hp and no soldier.")
           next
           # reset_soldier(hero, catsle_id)
         end
@@ -114,17 +90,17 @@ class Dracru
         if catsle_id && map = GameMap.get_available_map(agent)
           raid(catsle_id, hero, map, hp_text)
         else
-          @logger.info "No maps available"
+          $logger.info "No maps available"
         end
       else
-        @logger.info "Hero:#{hero} in raid. HP #{hp_text}"
+        $logger.info "Hero:#{hero} in raid. HP #{hp_text}"
       end
     end
   end
 
   def raid(catsle_id, hero_id, map, hp_text)
     select_hero = @agent.get(URL[:raid] + catsle_id)
-    sleep 0.5
+    delay
     begin
       confirm = select_hero.form_with(:action => '/a2t') do |f|
         if hero_checkbutton = f.checkbox_with(:value => hero_id)
@@ -136,25 +112,26 @@ class Dracru
         f.x = map.x
         f.y = map.y
       end.submit
+      delay
       result = confirm.form_with(:name => 'form1') do |f|
         f.action = '/s2t'
       end.click_button
-      @logger.info "SUCCESS: Raid #{map.x},#{map.y} (#{map.map_type}) with hero : #{hero_id}. HP #{hp_text}"
+      $logger.info "SUCCESS: Raid (#{map.x}|#{map.y}) #{map.map_type} with hero : #{hero_id}. HP #{hp_text}"
     rescue => e
-      @logger.error e.message
+      $logger.error e.message
       @agent.log.error e.message
     end
   end
   
   # ユニットを0にする
   def unset_soldier(hero_id, catsle_id)
-    @logger.info "Unset soldier: #{hero_id}"
+    $logger.info "Unset soldier: #{hero_id}"
     set_soldier(hero_id, catsle_id, 's_none.gif', 0)
   end
 
   # ユニットを再びセットする
   def reset_soldier(hero_id, catsle_id)
-    @logger.info "Reset soldier: #{hero_id}"
+    $logger.info "Reset soldier: #{hero_id}"
     # TODO implement me
   end
 
@@ -212,6 +189,7 @@ class Dracru
   
   def nokogiri_parse(url)
     html = @agent.get(url).body
+    delay
     doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
     if block_given?
       yield doc
@@ -242,4 +220,5 @@ class Dracru
   def soldier_page(catsle_id)
     (@soldier_pages ||= {})[catsle_id] ||= @agent.get(URL[:soldier] + catsle_id)
   end
+  
 end
