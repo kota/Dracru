@@ -10,7 +10,7 @@ class GameMap < ActiveRecord::Base
         yp = (CATSLE_Y.to_i + xy[1]).to_s
         html = agent.get(URL[:map] + "xp=#{xp}&yp=#{yp}").body
         doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
-        sleep 0.3
+        sleep 0.5
         doc.xpath("//div[@class='cells']/ul/li/a").each do |anchor|
           if(anchor['onmouseover'].split(',')[1] =~ /'(山地|丘陵|湿地|森林|悪魔城)'/)
             map_type = $1
@@ -42,9 +42,9 @@ class GameMap < ActiveRecord::Base
         map = GameMap.find(:first, :conditions => conditions,:order => order)
         if map
           html = agent.get(URL[:mapinfo] + map.mapid).body
-          delay
           doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
           text = doc.xpath("//div[@class='container']/div[@class='col1']/div[@class='cz_info']/h1").text
+          delay
           if text.split('(')[0] == '悪魔城廃墟'
             map.akuma_checked_at = Time.now
             map.save
@@ -58,6 +58,11 @@ class GameMap < ActiveRecord::Base
       end
       return map
     end
-
+  end
+  
+  def visit!
+  end
+  
+  def no_akuma!
   end
 end
