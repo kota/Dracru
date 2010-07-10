@@ -5,10 +5,8 @@ class GameMap < ActiveRecord::Base
   class << self
     include Core
     def generate_maps(agent)
-      VECTORS.each do |xy|
-        xp = (CATSLE_X.to_i + xy[0]).to_s
-        yp = (CATSLE_Y.to_i + xy[1]).to_s
-        html = agent.get(URL[:map] + "xp=#{xp}&yp=#{yp}").body
+      get_centers_of_neighbour(CATSLE_X.to_i,CATSLE_Y.to_i,RAID_DISTANCE).each do |coord|
+        html = agent.get(URL[:map] + "xp=#{coord[:x]}&yp=#{coord[:y]}").body
         doc = Nokogiri::HTML.parse(html, nil, 'UTF-8')
         sleep 0.5
         doc.xpath("//div[@class='cells']/ul/li/a").each do |anchor|
@@ -21,7 +19,6 @@ class GameMap < ActiveRecord::Base
             map_data = {:x => x, :y => y, :mapid => map_id, :map_type => map_type, :akuma => akuma}
             GameMap.create(map_data)
             $logger.info "map created #{map_data}"
-            
           end
         end
       end
@@ -65,4 +62,35 @@ class GameMap < ActiveRecord::Base
   
   def no_akuma!
   end
+
+  #distance = 画面単位ではかった距離
+  # ex. distance = 1
+  # * * *
+  # * c *
+  # * * *
+  #
+  # ex. ditance = 2
+  # * * * * *
+  # *       *
+  # *   c   *
+  # *       *
+  # * * * * *
+  #
+  # return 上図*の画面の中心座標の配列
+  #
+  def self.get_centers_of_neighbour(center_x, center_y, distance)
+    centers = []
+    v_dist_in_grids = distance * 9
+    h_dist_in_grids = distance * 11
+    (distance*2+1).times do |i|
+      v_diff   = i*9
+      h_diff = i*11
+      centers.push({:x => center_x-h_dist_in_grids+h_diff, :y => center_y-v_dist_in_grids})
+      centers.push({:x => center_x-h_dist_in_grids,        :y => center_y-v_dist_in_grids+v_diff})
+      centers.push({:x => center_x+h_dist_in_grids-h_diff, :y => center_y+v_dist_in_grids})
+      centers.push({:x => center_x+h_dist_in_grids,        :y => center_y+v_dist_in_grids-v_diff})
+    end
+    centers.uniq
+  end
+
 end
