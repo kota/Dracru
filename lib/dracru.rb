@@ -116,6 +116,7 @@ class Dracru
       result = confirm.form_with(:name => 'form1') do |f|
         f.action = '/s2t'
       end.click_button
+      map.visit!
       $logger.info "SUCCESS: Raid (#{map.x}|#{map.y}) #{map.map_type} with hero : #{hero_id}. HP #{hp_text}"
     rescue => e
       $logger.error e.message

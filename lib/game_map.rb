@@ -43,24 +43,25 @@ class GameMap < ActiveRecord::Base
           text = doc.xpath("//div[@class='container']/div[@class='col1']/div[@class='cz_info']/h1").text
           delay
           if text.split('(')[0] == '悪魔城廃墟'
-            map.akuma_checked_at = Time.now
-            map.save
-            $logger.info "Map (#{map.x}|#{map.y}), 悪魔城廃墟 tt"
+            map.no_akuma!
           else
-            map.visited_at = now.beginning_of_day
-            map.save!
-            break
+            return map
           end
         end
       end
-      return map
+      return nil
     end
   end
   
   def visit!
+    self.visited_at = now.beginning_of_day
+    self.map.save!
   end
   
   def no_akuma!
+    self.akuma_checked_at = Time.now
+    self.save
+    $logger.info "Map (#{map.x}|#{map.y}), 悪魔城廃墟 tt"
   end
 
   #distance = 画面単位ではかった距離
