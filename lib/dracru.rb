@@ -61,44 +61,64 @@ class Dracru
   end
 
   def raid_if_possible
+    
     each_hero_id do |hero|
       doc = nokogiri_parse(URL[:hero] + hero)
+      
+      # HP/MAXHP取得
       hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
-      unless hp_text =~ /^\d+\/\d+ $/
-        $logger.info("Hero:#{hero} is dead.")
+      # 死亡判定
+      hero_str = "Hero:#{hero}[#{hp_text}] :"
+      if hp_text == "0 死亡"
+        $logger.info("#{hero_str} is dead.")
+        # TODO 復活処理
+        next
+        
+        # 虚弱判定
+      elsif hp_text =~ /.*( 虚弱)/
+        # TODO 虚弱
+        $logger.info("#{hero_str} is infirmity.")
+      end
+      hp, max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text.split(' ( ')[0])[1..2]
+      
+      # 状態取得
+      status, catsle_id = ""
+      doc.xpath("//div[@class='hero_a']/ul/li").each do |e|
+        status    = e.text.split('：')[1]                 if e.text =~ /状態.*/
+        catsle_id = e.at_xpath('a')['href'].split('=')[1] if e.text =~ /城.*/
+      end
+      
+      # 行軍中判定
+      if status == "行軍中"
+        $logger.info("#{hero_str} is in raid.")
         next
       end
-      hp, max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text)[1..2]
-      if doc.xpath("//div[@class='hero_a']/ul/li/a[@href='/heroreturn?oid=#{hero}']").empty? #待機中？
-        catsle_id = nil
-        catsle_link = doc.xpath("//div[@class='hero_a']/ul/li/a").each do |anchor|
-          if anchor['href'] =~ /\/mindex\?vid=([0-9]+)/
-            catsle_id = $1
-          end 
-        end
-        # HPが満タンでユニットが0なら出撃しない(復活直後)
-        # TODO ユニットを配置して出撃できるようにすること
-        if hp >= max_hp && !has_soldier?(hero, catsle_id)
-          $logger.info("Hero:#{hero} has max hp and no soldier.")
-          next
-          # reset_soldier(hero, catsle_id)
-        end
-        #HPは x 分の１以下の場合はユニットを0にして出撃
-        if (hp.to_f / max_hp.to_f <= 1.0 / STOP_HUNT_HP_BORDER)
-          unset_soldier(hero, catsle_id)
-        end
-        if catsle_id && map = GameMap.get_available_map(agent)
-          raid(catsle_id, hero, map, hp_text)
-        else
-          $logger.info "No maps available"
-        end
+      
+      # HPが満タンでユニットが0なら出撃しない(復活直後)
+      # TODO ユニットを配置して出撃できるようにすること
+      if hp >= max_hp && !has_soldier?(hero, catsle_id)
+        $logger.info("#{hero_str} has max hp and no soldier.")
+        next
+        # reset_soldier(hero, catsle_id)
+      end
+      
+      # HPは x 分の１以下の場合はユニットを0にする
+      if (hp.to_f / max_hp.to_f <= 1.0 / STOP_HUNT_HP_BORDER)
+        unset_soldier(hero, catsle_id)
+      end
+      
+      # MAP取得、出撃
+      if catsle_id && map = GameMap.get_available_map(agent)
+        raid(catsle_id, hero, map, hp_text)
       else
-        $logger.info "Hero:#{hero} in raid. HP #{hp_text}"
+        $logger.info "#{hero_str}, No maps available"
       end
     end
   end
 
   def raid(catsle_id, hero_id, map, hp_text)
+    hero_str = "Hero:#{hero_id}[#{hp_text}] :"
+    
     select_hero = @agent.get(URL[:raid] + catsle_id)
     delay
     begin
@@ -106,7 +126,7 @@ class Dracru
         if hero_checkbutton = f.checkbox_with(:value => hero_id)
           hero_checkbutton.check
         else
-          raise "Hero:#{hero_id} not available."
+          raise "#{hero_str} is not available."
         end
         f.radiobuttons_with(:name => 'type').each{|radio| radio.check if radio.value == 2 }
         f.x = map.x
@@ -117,7 +137,7 @@ class Dracru
         f.action = '/s2t'
       end.click_button
       map.visit!
-      $logger.info "SUCCESS: Raid (#{map.x}|#{map.y}) #{map.map_type} with hero : #{hero_id}. HP #{hp_text}"
+      $logger.info "#{hero_str} successfully Raid (#{map.x}|#{map.y}) #{map.map_type}"
     rescue => e
       $logger.error e.message
       @agent.log.error e.message
@@ -126,13 +146,13 @@ class Dracru
   
   # ユニットを0にする
   def unset_soldier(hero_id, catsle_id)
-    $logger.info "Unset soldier: #{hero_id}"
+    $logger.info "#{hero_id}: Unset soldier."
     set_soldier(hero_id, catsle_id, 's_none.gif', 0)
   end
 
   # ユニットを再びセットする
   def reset_soldier(hero_id, catsle_id)
-    $logger.info "Reset soldier: #{hero_id}"
+    $logger.info "#{hero_id}: Reset soldier."
     # TODO implement me
   end
 

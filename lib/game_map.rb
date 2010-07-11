@@ -54,14 +54,14 @@ class GameMap < ActiveRecord::Base
   end
   
   def visit!
-    self.visited_at = now.beginning_of_day
-    self.map.save!
+    self.visited_at = Time.now.beginning_of_day
+    self.save!
   end
   
   def no_akuma!
     self.akuma_checked_at = Time.now
     self.save
-    $logger.info "Map (#{map.x}|#{map.y}), 悪魔城廃墟 tt"
+    $logger.info "Map (#{self.x}|#{self.y}), 悪魔城廃墟 tt"
   end
 
   #distance = 画面単位ではかった距離
