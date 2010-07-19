@@ -75,21 +75,24 @@ class Dracru
       # HP/MAXHP取得
       hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
       hero_str = "Hero:#{hero}[#{hp_text}] :"
-      puts status
       # 行軍中判定
       if status == "行軍中"
         $logger.info("#{hero_str} is in raid.")
         next
         
-        # 死亡判定
-      elsif status == "死亡 復活"
-        $logger.info("#{hero_str} is dead.")
-        next
-        
-        # 死亡判定
+        # 復活中判定
       elsif status == "復活中"
         $logger.info("#{hero_str} is dead. Reviving...")
         next
+        
+        # 死亡判定
+      elsif status == "死亡 復活"
+        $logger.info("#{hero_str} is dead.")
+        
+        # 復活処理（つくりかけ）
+        #doc = nokogiri_parse("/building?vid=#{castle_id}&tid=8")
+        next
+        
         # 虚弱判定
       elsif hp_text =~ /.*( 虚弱)/
         # TODO 虚弱
