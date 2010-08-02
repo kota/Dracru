@@ -8,6 +8,7 @@ require 'yaml'
 require 'lib/core'
 require 'lib/dracru'
 require 'lib/game_map'
+require 'lib/jmail'
 
 ROOT_PATH = File.expand_path(File.join(File.dirname(__FILE__), '..')) 
 TMP_PATH = ROOT_PATH + '/tmp'

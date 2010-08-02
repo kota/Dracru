@@ -144,6 +144,28 @@ class Dracru
     end
   end
   
+  # 攻撃チェック
+  def check_for_attack
+    MYCASTLES.each do |castle_id|
+      $logger.info "Castle ID : #{castle_id} Checking for attack...."
+      doc = nokogiri_parse(URL[:castle] + castle_id)
+      doc.xpath("//div[@class='col2']/ul[@class='war_info']//img").each do |e|
+        if e.attributes['src'].value == "/sys/images/war3.gif"
+          $logger.info "Castle ID : #{castle_id} is attacked...."
+          jmail = JMail.new()
+          jmail.set_account(FROM_ADDRESS)
+          jmail.set_to(TO_ADDRESS)
+          jmail.set_subject('D1 attacked')
+          jmail.set_text("Castle ID : #{castle_id} is attacked....")
+          jmail.send(FROM_ADDRESS, EMAIL_PASS)
+          return true 
+        end
+      end
+      false
+    end
+  end
+  
+
   # ユニットを0にする
   def unset_soldier(hero_id, catsle_id)
     $logger.info "#{hero_id}: Unset soldier."
