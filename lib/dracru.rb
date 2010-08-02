@@ -65,13 +65,32 @@ class Dracru
     each_hero_id do |hero|
       doc = nokogiri_parse(URL[:hero] + hero)
       
+      # 状態取得
+      status, catsle_id = ""
+      doc.xpath("//div[@class='hero_a']/ul/li").each do |e|
+        status    = e.text.split('：')[1]                 if e.text =~ /状態.*/
+        catsle_id = e.at_xpath('a')['href'].split('=')[1] if e.text =~ /城.*/
+        next
+      end
       # HP/MAXHP取得
       hp_text = doc.xpath("//div[@class='hero_b']/table[2]/tr[1]/td").text
-      # 死亡判定
       hero_str = "Hero:#{hero}[#{hp_text}] :"
-      if hp_text == "0 死亡"
+      # 行軍中判定
+      if status == "行軍中"
+        $logger.info("#{hero_str} is in raid.")
+        next
+        
+        # 復活中判定
+      elsif status == "復活中"
+        $logger.info("#{hero_str} is dead. Reviving...")
+        next
+        
+        # 死亡判定
+      elsif status == "死亡 復活"
         $logger.info("#{hero_str} is dead.")
-        # TODO 復活処理
+        
+        # 復活処理（つくりかけ）
+        #doc = nokogiri_parse("/building?vid=#{castle_id}&tid=8")
         next
         
         # 虚弱判定
@@ -81,18 +100,6 @@ class Dracru
       end
       hp, max_hp = /([0-9]+)\/([0-9]+)/.match(hp_text.split(' ( ')[0])[1..2]
       
-      # 状態取得
-      status, catsle_id = ""
-      doc.xpath("//div[@class='hero_a']/ul/li").each do |e|
-        status    = e.text.split('：')[1]                 if e.text =~ /状態.*/
-        catsle_id = e.at_xpath('a')['href'].split('=')[1] if e.text =~ /城.*/
-      end
-      
-      # 行軍中判定
-      if status == "行軍中"
-        $logger.info("#{hero_str} is in raid.")
-        next
-      end
       
       # HPが満タンでユニットが0なら出撃しない(復活直後)
       # TODO ユニットを配置して出撃できるようにすること
@@ -107,7 +114,7 @@ class Dracru
         unset_soldier(hero, catsle_id)
       end
       
-      # MAP取得、出撃
+      # 出撃
       if catsle_id && map = GameMap.get_available_map(agent)
         raid(catsle_id, hero, map, hp_text)
       else
