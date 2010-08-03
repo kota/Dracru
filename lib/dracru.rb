@@ -165,11 +165,12 @@ class Dracru
           jmail.set_subject('D1 attacked')
           jmail.set_text("Castle ID : #{castle_id} is attacked....")
           jmail.send(FROM_ADDRESS, EMAIL_PASS)
+
           return true 
         end
       end
-      false
     end
+    $logger.info "done. check...."
   end
   
 
